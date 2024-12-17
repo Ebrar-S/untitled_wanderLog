@@ -83,7 +83,7 @@ class HomePage extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.grey[300],
         onPressed: () {
           _showCreateFolderDialog(context);
         },
@@ -120,7 +120,7 @@ class HomePage extends StatelessWidget {
                 icon: const Icon(Icons.check),
                 label: const Text("Create"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
+                  backgroundColor: Colors.grey[300],
                 ),
               ),
             ],
@@ -145,7 +145,7 @@ class FolderCard extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.folder, color: Colors.teal),
+            const Icon(Icons.folder, color: Color(0xFF4B0082)),
             const SizedBox(width: 8),
             Text(title),
           ],

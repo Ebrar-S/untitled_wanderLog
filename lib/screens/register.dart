@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'login.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'homepage.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -60,7 +60,15 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('WanderLog'),
+        title: Text(
+            'WanderLog',
+          style: GoogleFonts.agbalumo(
+              textStyle: const TextStyle(fontSize: 40,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4B0082)
+              )
+          )
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'folderpage.dart'; // Import FolderPage
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -10,49 +11,111 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  // Initialize MapController
   final MapController _mapController = MapController();
+
+  // Navigate to the FolderPage
+  void _openFolderPage(String folderName) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            const FolderPage(folderName: "Folder"),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Map Screen"),
-        backgroundColor: Colors.teal,
-      ),
-      body: FlutterMap(
-        mapController: _mapController,
-        options: MapOptions(
-          initialCenter: LatLng(37.7749, -122.4194), // Initial center of the map
-          initialZoom: 12.0, // Initial zoom level
-        ),
+      body: Stack(
         children: [
-          TileLayer(
-            urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            subdomains: ['a', 'b', 'c'],
-          ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                point: LatLng(37.7749, -122.4194), // San Francisco coordinates
-                width: 80.0,
-                height: 80.0,
-                child: Icon(
-                  Icons.location_on,
-                  size: 40,
-                  color: Colors.red,
-                ),
+          FlutterMap(
+            mapController: _mapController,
+            options: const MapOptions(
+              initialCenter: LatLng(37.7749, -122.4194), // Initial center of the map
+              initialZoom: 12.0, // Initial zoom level
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                subdomains: ['a', 'b', 'c'],
+              ),
+              const MarkerLayer(
+                markers: [
+                  Marker(
+                    point: LatLng(37.7749, -122.4194), // San Francisco coordinates
+                    width: 80.0,
+                    height: 80.0,
+                    child: Icon(
+                      Icons.location_on,
+                      size: 40,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
               ),
             ],
+          ),
+          // Floating Buttons (Tabs)
+          Positioned(
+            top: 10,
+            left: 0,
+            right: 0,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildFolderButton("Restaurants", Icons.restaurant),
+                    _buildFolderButton("Coffee Shops", Icons.local_cafe),
+                    _buildFolderButton("Shopping", Icons.shopping_bag),
+                    _buildFolderButton("Parks", Icons.park),
+                    _buildFolderButton("Hotels", Icons.hotel),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.grey[300],
         onPressed: () {
-          // Center the map on San Francisco when the button is pressed
           _mapController.move(LatLng(37.7749, -122.4194), 12.0);
         },
-        child: Icon(Icons.location_searching),
+        child: const Icon(Icons.location_searching),
+      ),
+    );
+  }
+
+  // Helper method to create folder buttons
+  Widget _buildFolderButton(String title, IconData icon) {
+    return GestureDetector(
+      onTap: () => _openFolderPage(title),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF4B0082)),
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF4B0082),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

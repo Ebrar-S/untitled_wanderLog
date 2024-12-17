@@ -4,6 +4,7 @@ import 'homepage.dart'; // Import HomePage
 import 'mapscreen.dart'; // Import MapScreen (placeholder)
 import 'settingsscreen.dart'; // Import SettingsScreen (placeholder)
 import 'login.dart'; // Import LoginPage for logout functionality
+import 'package:google_fonts/google_fonts.dart';
 
 class NavigationWrapper extends StatefulWidget {
   const NavigationWrapper({super.key});
@@ -80,29 +81,36 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color(0xFFB39DDB),
         title: GestureDetector(
           onTap: () {
             print('WanderLog tapped!');
           },
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
+              Text(
+                "WanderLog",
+                style: GoogleFonts.agbalumo(
+                  textStyle: const TextStyle(
+                    fontSize: 25,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4B0082),
+                  ),
+                ),
+              ),
+              const Spacer(), // Pushes the GestureDetector to the right
               GestureDetector(
                 onTap: () {
                   _showProfileSettings(context);
                 },
                 child: CircleAvatar(
                   radius: 18,
-                  backgroundImage: NetworkImage(
+                  backgroundImage: const NetworkImage(
                     "https://via.placeholder.com/150", // Replace with user's profile picture URL
                   ),
                   backgroundColor: Colors.grey[300],
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                "WanderLog",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ],
           ),

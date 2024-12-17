@@ -20,11 +20,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Firebase Auth Demo',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        textTheme: GoogleFonts.bungeeTextTheme(
-          Theme.of(context).textTheme,
-        ),
-      ),
       home: const LoginPage(),
     );
   }

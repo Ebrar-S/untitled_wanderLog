@@ -77,7 +77,7 @@ class _LoginPageState extends State<LoginPage> {
                     child: Text(
                       'WanderLog',
                       style: GoogleFonts.agbalumo(
-                        textStyle: TextStyle(fontSize: 55,
+                        textStyle: const TextStyle(fontSize: 55,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF4B0082),)
                       ),
@@ -151,7 +151,12 @@ class _LoginPageState extends State<LoginPage> {
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                  child: const Text('Login', style: TextStyle(fontSize: 16, color: Colors.white)),
+                                  child: Text(
+                                    'Login',
+                                    style: GoogleFonts.bungee(
+                                      textStyle: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.white)),)
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -165,7 +170,11 @@ class _LoginPageState extends State<LoginPage> {
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                  child: const Text('Sign Up', style: TextStyle(fontSize: 16)),
+                                  child: Text(
+                                      'Sign Up',
+                                      style: GoogleFonts.bungee(
+                                          textStyle: TextStyle(
+                                              fontSize: 16)))
                                 ),
                               ),
                             ],
