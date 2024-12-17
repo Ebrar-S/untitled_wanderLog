@@ -64,7 +64,7 @@ class _MapScreenState extends State<MapScreen> {
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 10),
+                margin: const EdgeInsets.symmetric(horizontal: 0),
                 padding: const EdgeInsets.all(8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,

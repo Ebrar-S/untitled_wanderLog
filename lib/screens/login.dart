@@ -74,12 +74,18 @@ class _LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   color:Colors.deepPurple[50],
                   child: Center(
-                    child: Text(
-                      'WanderLog',
-                      style: GoogleFonts.agbalumo(
-                        textStyle: const TextStyle(fontSize: 55,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4B0082),)
+                    child: Hero(
+                      tag:'wanderlogLogo',
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: Text(
+                          'WanderLog',
+                          style: GoogleFonts.agbalumo(
+                            textStyle: const TextStyle(fontSize: 55,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF4B0082),)
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -105,13 +111,22 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(isKeyboardOpen ? 0 : 30),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.16), // Shadow color similar to FAB
+                        blurRadius: 10, // Less blur for sharper shadow
+                        spreadRadius: 1, // No spread to make it tight
+                        offset: const Offset(0, 4), // Shadow offset similar to FAB
+                      ),
+                    ],
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
                     child: Form(
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
+                          SizedBox(height: 85),
                           TextFormField(
                             controller: _emailController,
                             decoration: InputDecoration(
