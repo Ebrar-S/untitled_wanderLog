@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';  // Import FirebaseAuth
 import 'package:flutter/material.dart';
-import 'folderpage.dart'; // Import the FolderPage
+import 'folderpage.dart';  // Import FolderPage
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -22,29 +24,56 @@ class HomePage extends StatelessWidget {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: List.generate(10, (index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: GestureDetector(
-                          onTap: () {
-                            // Navigate to the FolderPage when a folder is clicked
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    FolderPage(folderName: "Folder ${index + 1}"),
-                              ),
-                            );
-                          },
-                          child: FolderCard(title: "Folder ${index + 1}"),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
+                // Fetching folders from Firestore for the currently authenticated user
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('Users')
+                      .doc(FirebaseAuth.instance.currentUser!.uid) // User's UID
+                      .collection('Folders')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return const Center(child: Text("Error fetching folders"));
+                    }
+
+                    final folders = snapshot.data!.docs;
+
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: List.generate(folders.length, (index) {
+
+                          final folder = folders[index];
+                          final folderName = folder['name'];
+                          final folderId = folder.id;  // Get the document ID
+
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: GestureDetector(
+                              onTap: () {
+                                // Pass both folderName and folderId to FolderPage
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FolderPage(
+                                      folderName: folderName,
+                                      folderId: folderId,  // Pass the folderId here
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: FolderCard(title: folderName),
+                            ),
+                          );
+                        }),
+                      ),
+                    );
+                  },
+                )
+
               ],
             ),
           ),
@@ -98,6 +127,8 @@ class HomePage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        TextEditingController folderNameController = TextEditingController();
+
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
@@ -106,8 +137,9 @@ class HomePage extends StatelessWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const TextField(
-                decoration: InputDecoration(
+              TextField(
+                controller: folderNameController,
+                decoration: const InputDecoration(
                   labelText: "Folder Name",
                   border: OutlineInputBorder(),
                 ),
@@ -115,8 +147,10 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () {
+                  // Create a folder with the provided name
+                  createFolder(folderNameController.text);
+
                   Navigator.pop(context); // Close the dialog
-                  // Add functionality to create a folder here
                 },
                 icon: const Icon(Icons.check),
                 label: const Text("Create"),
@@ -129,6 +163,27 @@ class HomePage extends StatelessWidget {
         );
       },
     );
+  }
+
+  // Function to create a folder in Firestore for the current user
+  Future<void> createFolder(String folderName) async {
+    try {
+      // Firestore instance and collection reference
+      String uid = FirebaseAuth.instance.currentUser!.uid; // Get current user's UID
+      CollectionReference folders = FirebaseFirestore.instance
+          .collection('Users')
+          .doc(uid) // User's UID
+          .collection('Folders');
+
+      // Add folder to Firestore
+      await folders.add({
+        'name': folderName,
+        'createdAt': FieldValue.serverTimestamp(),  // Adds timestamp automatically
+      });
+      print("Folder created successfully");
+    } catch (e) {
+      print("Error creating folder: $e");
+    }
   }
 }
 

@@ -5,12 +5,12 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return const SingleChildScrollView(
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: const Text("This is the Settings Screen!"),
+            padding: EdgeInsets.all(8.0),
+            child: Text("This is the Settings Screen!"),
           ),
           // Settings content goes here
         ],

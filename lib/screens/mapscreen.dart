@@ -13,16 +13,6 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
 
-  // Navigate to the FolderPage
-  void _openFolderPage(String folderName) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            const FolderPage(folderName: "Folder"),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +84,7 @@ class _MapScreenState extends State<MapScreen> {
   // Helper method to create folder buttons
   Widget _buildFolderButton(String title, IconData icon) {
     return GestureDetector(
-      onTap: () => _openFolderPage(title),
+      onTap: () => {},
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
