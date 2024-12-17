@@ -15,5 +15,9 @@
       "**/node_modules/**"
     ]
   },
-  "extensions": {}
+  "extensions": {},
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
 }
