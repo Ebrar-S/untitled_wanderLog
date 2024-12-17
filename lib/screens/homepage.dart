@@ -33,7 +33,8 @@ class HomePage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => FolderPage(folderName: "Folder ${index + 1}"),
+                                builder: (context) =>
+                                    FolderPage(folderName: "Folder ${index + 1}"),
                               ),
                             );
                           },
@@ -79,22 +80,53 @@ class HomePage extends StatelessWidget {
               ),
             ),
           ),
-          // "Create Folder" button at the bottom
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                // Add create folder functionality
-              },
-              icon: const Icon(Icons.create_new_folder),
-              label: const Text("Create Folder"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-              ),
-            ),
-          ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.teal,
+        onPressed: () {
+          _showCreateFolderDialog(context);
+        },
+        child: const Icon(Icons.create_new_folder),
+      ),
+    );
+  }
+
+  // Floating Dialog for Creating Folder
+  void _showCreateFolderDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: const Text("Create New Folder"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const TextField(
+                decoration: InputDecoration(
+                  labelText: "Folder Name",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context); // Close the dialog
+                  // Add functionality to create a folder here
+                },
+                icon: const Icon(Icons.check),
+                label: const Text("Create"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
