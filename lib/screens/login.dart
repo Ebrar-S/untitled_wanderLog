@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'navigation_wrapper.dart';
 import 'register.dart';
-import 'homepage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -45,45 +44,81 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _signUp() {
-    Navigator.pushAndRemoveUntil(
+    Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const RegisterPage()),
-          (Route<dynamic> route) => false,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const RegisterPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return Stack(
+            children: [
+              AnimatedBuilder(
+                animation: animation,
+                builder: (context, child) {
+                  return Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFFB39DDB),
+                          Color(0xFF7986CB),
+                          Color(0xFFFF4081),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomLeft,
+                      ),
+                    ),
+                    transform: Matrix4.identity()
+                      ..scale(1.0 + animation.value),
+                  );
+                },
+              ),
+              FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
           return Stack(
             children: [
               // Background
               Container(
                 decoration: BoxDecoration(
-                  color:Colors.deepPurple[50],
+                  color: Colors.deepPurple[50],
                 ),
               ),
-              // Light purple top container
+              // Top container
               Align(
                 alignment: Alignment.topCenter,
                 child: Container(
-                  height: constraints.maxHeight*0.4,
+                  height: constraints.maxHeight * (isLandscape ? 0.3 : 0.4),
                   width: double.infinity,
-                  color:Colors.deepPurple[50],
+                  color: Colors.deepPurple[50],
                   child: Center(
                     child: Hero(
-                      tag:'wanderlogLogo',
+                      tag: 'wanderlogLogo',
                       child: Material(
                         type: MaterialType.transparency,
                         child: Text(
                           'WanderLog',
                           style: GoogleFonts.agbalumo(
-                            textStyle: const TextStyle(fontSize: 55,
+                            textStyle: const TextStyle(
+                              fontSize: 55,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF4B0082),)
+                              color: Color(0xFF4B0082),
+                            ),
                           ),
                         ),
                       ),
@@ -91,110 +126,121 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              // Bottom yellow-orange container
+              // Bottom container
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 0),
                 bottom: isKeyboardOpen ? 0 : constraints.maxHeight * 0,
                 height: isKeyboardOpen
                     ? constraints.maxHeight
-                    : constraints.maxHeight * 0.70,
+                    : constraints.maxHeight * (isLandscape ? 0.7 : 0.6),
                 left: 0,
                 right: 0,
                 child: Container(
                   alignment: Alignment.bottomCenter,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFB39DDB), Color(0xFF7986CB),Color(0xFFFF4081)],
+                      colors: [Color(0xFFB39DDB),
+                        Color(0xFF7986CB),
+                        Color(0xFFFF4081),],
                       begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+                      end: Alignment.bottomLeft,
                     ),
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(isKeyboardOpen ? 0 : 30),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.16), // Shadow color similar to FAB
-                        blurRadius: 10, // Less blur for sharper shadow
-                        spreadRadius: 1, // No spread to make it tight
-                        offset: const Offset(0, 4), // Shadow offset similar to FAB
+                        color: Colors.black.withOpacity(0.16),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: Padding(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
-                    child: Form(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 85),
-                          TextFormField(
-                            controller: _emailController,
-                            decoration: InputDecoration(
-                              labelText: 'Email',
-                              filled: true,
-                              fillColor: Colors.white,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 20),
-                          TextFormField(
-                            controller: _passwordController,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              filled: true,
-                              fillColor: Colors.white,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            obscureText: true,
-                          ),
-                          const SizedBox(height: 30),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: _signIn,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF4B0082),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Login',
-                                    style: GoogleFonts.bungee(
-                                      textStyle: TextStyle(
-                                          fontSize: 16,
-                                          color: Colors.white)),)
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight * (isLandscape ? 0.5 : 0.6),
+                      ),
+                      child: Form(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (!isLandscape && !isKeyboardOpen) const SizedBox(height: 85),
+                            TextFormField(
+                              controller: _emailController,
+                              decoration: InputDecoration(
+                                labelText: 'Email',
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
                                 ),
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: _signUp,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: const Color(0xFF4B0082),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
+                              keyboardType: TextInputType.emailAddress,
+                            ),
+                            const SizedBox(height: 20),
+                            TextFormField(
+                              controller: _passwordController,
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              obscureText: true,
+                            ),
+                            const SizedBox(height: 30),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _signIn,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF4B0082),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Login',
+                                      style: GoogleFonts.bungee(
+                                        textStyle: const TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  child: Text(
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _signUp,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: const Color(0xFF4B0082),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    child: Text(
                                       'Sign Up',
                                       style: GoogleFonts.bungee(
-                                          textStyle: TextStyle(
-                                              fontSize: 16)))
+                                        textStyle: const TextStyle(fontSize: 16),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
