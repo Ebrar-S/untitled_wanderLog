@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -51,22 +53,35 @@ class _MapScreenState extends State<MapScreen> {
             top: 10,
             left: 0,
             right: 0,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 0),
-                padding: const EdgeInsets.all(8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildFolderButton("Restaurants", Icons.restaurant),
-                    _buildFolderButton("Coffee Shops", Icons.local_cafe),
-                    _buildFolderButton("Shopping", Icons.shopping_bag),
-                    _buildFolderButton("Parks", Icons.park),
-                    _buildFolderButton("Hotels", Icons.hotel),
-                  ],
-                ),
-              ),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('Users')
+                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                  .collection('Folders')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text("No folders available."));
+                }
+
+                final folders = snapshot.data!.docs;
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: folders.map((folder) {
+                      final folderData = folder.data() as Map<String, dynamic>;
+                      final folderName = folderData['name'] ?? "Unnamed Folder";
+                      final folderId = folder.id;
+
+                      return _buildFolderButton(folderName, folderId);
+                    }).toList(),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -82,9 +97,19 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Helper method to create folder buttons
-  Widget _buildFolderButton(String title, IconData icon) {
+  Widget _buildFolderButton(String folderName, String folderId) {
     return GestureDetector(
-      onTap: () => {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FolderPage(
+              folderName: folderName,
+              folderId: folderId,
+            ),
+          ),
+        );
+      },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -94,10 +119,10 @@ class _MapScreenState extends State<MapScreen> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: const Color(0xFF4B0082)),
+            const Icon(Icons.folder, color: Color(0xFF4B0082)),
             const SizedBox(width: 6),
             Text(
-              title,
+              folderName,
               style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF4B0082),

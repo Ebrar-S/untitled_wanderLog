@@ -13,7 +13,7 @@ class FolderPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(folderName),
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color(0xFFB39DDB),
       ),
       body: Column(
         children: [
@@ -70,7 +70,7 @@ class FolderPage extends StatelessWidget {
               icon: const Icon(Icons.add),
               label: const Text("Add Picture"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
+                backgroundColor: const Color(0xFFB39DDB),
               ),
             ),
           ),
