@@ -247,7 +247,6 @@ class _MapScreenState extends State<MapScreen> {
 
                       // Add the marker to the map and save to the folder
                       _addMarker(title!, address!, pinColor!, lat, lng, selectedFolderId!);
-                      _saveLocationToFolder(selectedFolderId!, title!, address!, pinColor!, lat, lng);
                     } else {
                       // If no location is found, show an error message
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -319,34 +318,6 @@ class _MapScreenState extends State<MapScreen> {
     } catch (e) {
       print("Error adding location: $e");
     }
-  }
-
-
-  void _saveLocationToFolder(String folderId, String title, String address, Color color, double lat, double lng) {
-    final newLocationData = {
-      'title': title,
-      'address': address,
-      'pinColor': color.value, // Store color as integer (ARGB)
-      'latitude': lat,
-      'longitude': lng,
-    };
-
-    FirebaseFirestore.instance
-        .collection('Users')
-        .doc(FirebaseAuth.instance.currentUser!.uid)
-        .collection('Folders')
-        .doc(folderId)
-        .collection('Locations')
-        .add(newLocationData)
-        .then((value) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Location added to folder')),
-      );
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding location: $error')),
-      );
-    });
   }
 
   // Show color picker to select pin color
