@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:geocoding/geocoding.dart';
 import 'folderpage.dart'; // Import FolderPage
 
 class MapScreen extends StatefulWidget {
@@ -14,7 +16,66 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
+  List<Marker> _markers = [];
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchAllLocations(); // Fetch locations when the screen is loaded
+  }
+
+  // Fetch all locations from Firestore and add them as markers
+  Future<void> _fetchAllLocations() async {
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
+
+    // Fetch folders
+    final foldersSnapshot = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(uid)
+        .collection('Folders')
+        .get();
+
+    List<Marker> allMarkers = [];
+
+    for (var folder in foldersSnapshot.docs) {
+      final folderId = folder.id;
+
+      // Fetch locations for each folder
+      final locationsSnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(uid)
+          .collection('Folders')
+          .doc(folderId)
+          .collection('Locations')
+          .get();
+
+      for (var location in locationsSnapshot.docs) {
+        final locationData = location.data();
+        final title = locationData['title'] ?? 'Unnamed Location';
+        final address = locationData['address'] ?? 'No Address';
+        final pinColor = Color(locationData['pinColor'] ?? Colors.red.value);
+        final lat = locationData['latitude'];
+        final lng = locationData['longitude'];
+
+        // Create a new marker for each location
+        allMarkers.add(Marker(
+          point: LatLng(lat, lng),
+          width: 80.0,
+          height: 80.0,
+          child: Icon(
+            Icons.location_on,
+            size: 40,
+            color: pinColor, // Set the color of the pin
+          ),
+        ));
+      }
+    }
+
+    // Update the state with all fetched markers
+    setState(() {
+      _markers = allMarkers;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +85,7 @@ class _MapScreenState extends State<MapScreen> {
           FlutterMap(
             mapController: _mapController,
             options: const MapOptions(
-              initialCenter: LatLng(37.7749, -122.4194), // Initial center of the map
+              initialCenter: LatLng(41.9028, 12.4964), // Initial center of the map
               initialZoom: 12.0, // Initial zoom level
             ),
             children: [
@@ -32,19 +93,8 @@ class _MapScreenState extends State<MapScreen> {
                 urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                 subdomains: ['a', 'b', 'c'],
               ),
-              const MarkerLayer(
-                markers: [
-                  Marker(
-                    point: LatLng(37.7749, -122.4194), // San Francisco coordinates
-                    width: 80.0,
-                    height: 80.0,
-                    child: Icon(
-                      Icons.location_on,
-                      size: 40,
-                      color: Colors.red,
-                    ),
-                  ),
-                ],
+              MarkerLayer(
+                markers: _markers, // Use the list of markers
               ),
             ],
           ),
@@ -86,15 +136,246 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.grey[300],
-        onPressed: () {
-          _mapController.move(LatLng(37.7749, -122.4194), 12.0);
-        },
-        child: const Icon(Icons.location_searching),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Button to show location picker dialog
+          FloatingActionButton(
+            backgroundColor: Colors.grey[300],
+            onPressed: () {
+              _showAddMarkerDialog();
+            },
+            child: const Icon(Icons.add_location_alt),
+          ),
+          const SizedBox(width: 16),
+          // Button to reset map position
+          FloatingActionButton(
+            backgroundColor: Colors.grey[300],
+            onPressed: () {
+              _mapController.move(LatLng(41.9028, 12.4964), 12.0);
+            },
+            child: const Icon(Icons.location_searching),
+          ),
+        ],
       ),
     );
   }
+
+  void _showAddMarkerDialog() async {
+    String? title;
+    String? address;
+    Color? pinColor;
+    String? selectedFolderId;
+
+    // Fetch the list of folders to choose from
+    List<QueryDocumentSnapshot> folders = await _getFolders();
+
+    await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Add Location'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Input for title and address
+              TextField(
+                decoration: InputDecoration(labelText: 'Location Title'),
+                onChanged: (value) {
+                  title = value;
+                },
+              ),
+              TextField(
+                decoration: InputDecoration(labelText: 'Location Address'),
+                onChanged: (value) {
+                  address = value;
+                },
+              ),
+              // Folder selection dropdown
+              DropdownButton<String>(
+                hint: Text('Select Folder'),
+                value: selectedFolderId,
+                onChanged: (String? newFolderId) {
+                  setState(() {
+                    selectedFolderId = newFolderId;
+                  });
+                },
+                items: folders.map((folder) {
+                  final folderData = folder.data() as Map<String, dynamic>;
+                  final folderName = folderData['name'] ?? "Unnamed Folder";
+                  final folderId = folder.id;
+                  return DropdownMenuItem<String>(
+                    value: folderId,
+                    child: Text(folderName),
+                  );
+                }).toList(),
+              ),
+              // Color Picker Button
+              ElevatedButton(
+                onPressed: () {
+                  // Show color picker dialog
+                  _selectPinColor(context, (newColor) {
+                    setState(() {
+                      pinColor = newColor; // Update pin color
+                    });
+                  });
+                },
+                child: Text('Select Pin Color'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (title != null && address != null && pinColor != null && selectedFolderId != null) {
+                  // Geocode the address to get latitude and longitude
+                  try {
+                    List<Location> locations = await locationFromAddress(address!);
+
+                    // Ensure that at least one location was found
+                    if (locations.isNotEmpty) {
+                      // Use the first location result
+                      Location location = locations.first;
+                      double lat = location.latitude;
+                      double lng = location.longitude;
+
+                      // Add the marker to the map and save to the folder
+                      _addMarker(title!, address!, pinColor!, lat, lng, selectedFolderId!);
+                      _saveLocationToFolder(selectedFolderId!, title!, address!, pinColor!, lat, lng);
+                    } else {
+                      // If no location is found, show an error message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Address could not be geocoded')),
+                      );
+                    }
+                  } catch (e) {
+                    // Handle error
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error geocoding address: $e')),
+                    );
+                  }
+
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Text('Add Marker'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<List<QueryDocumentSnapshot>> _getFolders() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('Users')
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .collection('Folders')
+        .get();
+    return snapshot.docs;
+  }
+
+
+  Future<void> _addMarker(String title, String address, Color color, double lat, double lng, String folderId) async {
+    final String uid = FirebaseAuth.instance.currentUser!.uid; // Get current user's UID
+    final CollectionReference folderCollection = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(uid) // User's UID
+        .collection('Folders')
+        .doc(folderId) // Folder ID
+        .collection('Locations'); // New subcollection for locations
+
+    try {
+      await folderCollection.add({
+        'title': title,
+        'address': address,
+        'latitude': lat,
+        'longitude': lng,
+        'pinColor': color.value, // Store color as an integer value
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      // After adding to Firestore, update the markers list
+      setState(() {
+        _markers.add(
+          Marker(
+            point: LatLng(lat, lng),
+            width: 80.0,
+            height: 80.0,
+            child: Icon(
+              Icons.location_on,
+              size: 40,
+              color: color,
+            ),
+          ),
+        );
+      });
+      print("Location added successfully!");
+    } catch (e) {
+      print("Error adding location: $e");
+    }
+  }
+
+
+  void _saveLocationToFolder(String folderId, String title, String address, Color color, double lat, double lng) {
+    final newLocationData = {
+      'title': title,
+      'address': address,
+      'pinColor': color.value, // Store color as integer (ARGB)
+      'latitude': lat,
+      'longitude': lng,
+    };
+
+    FirebaseFirestore.instance
+        .collection('Users')
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .collection('Folders')
+        .doc(folderId)
+        .collection('Locations')
+        .add(newLocationData)
+        .then((value) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Location added to folder')),
+      );
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding location: $error')),
+      );
+    });
+  }
+
+  // Show color picker to select pin color
+  void _selectPinColor(BuildContext context, ValueChanged<Color> onColorSelected) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Select Pin Color"),
+          content: SingleChildScrollView(
+            child: BlockPicker(
+              pickerColor: Colors.red, // Initial color
+              onColorChanged: onColorSelected, // Callback when a new color is selected
+            ),
+          ),
+          actions: [
+            // OK Button to close the dialog after selecting a color
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   // Helper method to create folder buttons
   Widget _buildFolderButton(String folderName, String folderId) {
