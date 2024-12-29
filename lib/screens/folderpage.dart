@@ -14,6 +14,12 @@ class FolderPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(folderName),
         backgroundColor: const Color(0xFFB39DDB),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () => _confirmDeleteFolder(context),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -45,22 +51,28 @@ class FolderPage extends StatelessWidget {
                   itemCount: pictures.length,
                   itemBuilder: (context, index) {
                     final picture = pictures[index].data() as Map<String, dynamic>;
-                    return Container(
-                      color: Colors.grey[300],
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.image, size: 40),
-                          const SizedBox(height: 8),
-                          Text(picture['description'] ?? "No Description"),
-                        ],
+                    final pictureId = pictures[index].id;
+
+                    return GestureDetector(
+                      onLongPress: () => _confirmDeletePicture(context, pictureId),
+                      child: Container(
+                        color: Colors.grey[300],
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.image, size: 40),
+                            const SizedBox(height: 8),
+                            Text(picture['description'] ?? "No Description"),
+                          ],
+                        ),
                       ),
                     );
                   },
                 );
               },
             ),
-          ),Expanded(
+          ),
+          Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('Users')
@@ -83,10 +95,16 @@ class FolderPage extends StatelessWidget {
                   itemCount: locations.length,
                   itemBuilder: (context, index) {
                     final location = locations[index].data() as Map<String, dynamic>;
+                    final locationId = locations[index].id;
+
                     return ListTile(
                       leading: const Icon(Icons.location_on),
                       title: Text(location['title'] ?? "No Title"),
                       subtitle: Text(location['address'] ?? "No Address"),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _confirmDeleteLocation(context, locationId),
+                      ),
                     );
                   },
                 );
@@ -111,7 +129,101 @@ class FolderPage extends StatelessWidget {
     );
   }
 
-  // Show dialog to add picture
+  void _confirmDeleteFolder(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Delete Folder"),
+          content: const Text("Are you sure you want to delete this folder?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await FirebaseFirestore.instance
+                    .collection('Users')
+                    .doc(FirebaseAuth.instance.currentUser!.uid)
+                    .collection('Folders')
+                    .doc(folderId)
+                    .delete();
+                Navigator.pop(context);
+                Navigator.pop(context); // Navigate back after deleting
+              },
+              child: const Text("Delete"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmDeletePicture(BuildContext context, String pictureId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Delete Picture"),
+          content: const Text("Are you sure you want to delete this picture?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await FirebaseFirestore.instance
+                    .collection('Users')
+                    .doc(FirebaseAuth.instance.currentUser!.uid)
+                    .collection('Folders')
+                    .doc(folderId)
+                    .collection('Pictures')
+                    .doc(pictureId)
+                    .delete();
+                Navigator.pop(context);
+              },
+              child: const Text("Delete"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteLocation(BuildContext context, String locationId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Delete Location"),
+          content: const Text("Are you sure you want to delete this location?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await FirebaseFirestore.instance
+                    .collection('Users')
+                    .doc(FirebaseAuth.instance.currentUser!.uid)
+                    .collection('Folders')
+                    .doc(folderId)
+                    .collection('Locations')
+                    .doc(locationId)
+                    .delete();
+                Navigator.pop(context);
+              },
+              child: const Text("Delete"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showAddPictureDialog(BuildContext context) {
     final TextEditingController descriptionController = TextEditingController();
 
@@ -163,7 +275,6 @@ class FolderPage extends StatelessWidget {
     );
   }
 
-  // Method to add a picture to Firestore
   Future<void> addPictureToFolder(String description) async {
     try {
       final String uid = FirebaseAuth.instance.currentUser!.uid; // Get current user's UID
