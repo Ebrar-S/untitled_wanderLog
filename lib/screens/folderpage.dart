@@ -13,7 +13,7 @@ class FolderPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(folderName),
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color(0xFFB39DDB),
       ),
       body: Column(
         children: [
@@ -60,6 +60,38 @@ class FolderPage extends StatelessWidget {
                 );
               },
             ),
+          ),Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('Users')
+                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                  .collection('Folders')
+                  .doc(folderId)
+                  .collection('Locations')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text("No locations in this folder."));
+                }
+
+                final locations = snapshot.data!.docs;
+
+                return ListView.builder(
+                  itemCount: locations.length,
+                  itemBuilder: (context, index) {
+                    final location = locations[index].data() as Map<String, dynamic>;
+                    return ListTile(
+                      leading: const Icon(Icons.location_on),
+                      title: Text(location['title'] ?? "No Title"),
+                      subtitle: Text(location['address'] ?? "No Address"),
+                    );
+                  },
+                );
+              },
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -70,7 +102,7 @@ class FolderPage extends StatelessWidget {
               icon: const Icon(Icons.add),
               label: const Text("Add Picture"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
+                backgroundColor: const Color(0xFFB39DDB),
               ),
             ),
           ),
