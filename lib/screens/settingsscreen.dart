@@ -18,7 +18,7 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 ListTile(
                   leading: const Icon(Icons.person),
-                  title: const Text("Edit Profile"),
+                  title: constg Text("Edit Profile"),
                   onTap: () {
                     // Navigate to profile editing screen
                   },
