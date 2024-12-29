@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/login.dart';
@@ -17,10 +16,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       title: 'Firebase Auth Demo',
       debugShowCheckedModeBanner: false,
-      home: const LoginPage(),
+      home: LoginPage(),
     );
   }
 }

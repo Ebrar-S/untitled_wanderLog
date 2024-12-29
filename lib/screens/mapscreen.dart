@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'folderpage.dart'; // Import FolderPage
+// Import FolderPage
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -28,7 +28,7 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               TileLayer(
                 urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                subdomains: ['a', 'b', 'c'],
+                subdomains: const ['a', 'b', 'c'],
               ),
               const MarkerLayer(
                 markers: [
@@ -74,7 +74,7 @@ class _MapScreenState extends State<MapScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.grey[300],
         onPressed: () {
-          _mapController.move(LatLng(37.7749, -122.4194), 12.0);
+          _mapController.move(const LatLng(37.7749, -122.4194), 12.0);
         },
         child: const Icon(Icons.location_searching),
       ),
