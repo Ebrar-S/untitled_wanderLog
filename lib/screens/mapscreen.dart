@@ -356,7 +356,6 @@ class _MapScreenState extends State<MapScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => FolderPage(
-              folderName: folderName,
               folderId: folderId,
             ),
           ),

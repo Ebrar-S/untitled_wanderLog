@@ -59,7 +59,6 @@ class HomePage extends StatelessWidget {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => FolderPage(
-                                      folderName: folderName,
                                       folderId: folderId,
                                       // Pass the folderId here
 
@@ -153,8 +152,42 @@ class HomePage extends StatelessWidget {
                               itemBuilder: (context, index) {
                                 final picture = pictures[index].data() as Map<String, dynamic>;
                                 final pictureId = pictures[index].id;
+                                final folderId = pictures[index]['folderId'];
 
                                 return GestureDetector(
+                                  onTap: () {
+                                    // Open the image in a larger view with the proper aspect ratio
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) {
+                                        return Dialog(
+                                          child: Builder(
+                                            builder: (context) {
+                                              // Get the device's screen width and height
+                                              final size = MediaQuery.of(context).size;
+                                              return Image.network(
+                                                picture['imageUrl'] ?? '',
+                                                width: size.width, // Set the width based on the screen size
+                                                height: size.height * 0.6, // Set the height based on a portion of screen height
+                                                fit: BoxFit.contain, // Ensures the image fits without distortion
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                  onLongPress: () {
+                                    // Long press opens the folder where the picture belongs
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => FolderPage(
+                                          folderId: folderId, // Pass the folder ID
+                                        ),
+                                      ),
+                                    );
+                                  },
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -168,7 +201,7 @@ class HomePage extends StatelessWidget {
                                         fit: BoxFit.cover, // Make sure it fits well inside the box
                                       )
                                           : const Icon(Icons.image, size: 40), // Default icon if no image URL
-                                      const SizedBox(height: 8),
+                                      const SizedBox(height: 5),
                                       // Wrap the description text with an Expanded widget
                                       Expanded(
                                         child: Text(

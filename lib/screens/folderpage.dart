@@ -8,145 +8,209 @@ import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 
 class FolderPage extends StatelessWidget {
-  final String folderName;
   final String folderId;
   final Function? onPictureAdded;
 
-  const FolderPage({required this.folderName, required this.folderId, this.onPictureAdded, super.key});
+  const FolderPage({required this.folderId, this.onPictureAdded, super.key});
+
+  Future<String> _getFolderName(String folderId) async {
+    try {
+      // Query to get the folder name from Firestore
+      final folderDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(FirebaseAuth.instance.currentUser!.uid) // Current user ID
+          .collection('Folders')
+          .doc(folderId) // Folder ID
+          .get();
+
+      // Return the folder name if it exists
+      if (folderDoc.exists) {
+        return folderDoc['name'] ?? 'Unknown Folder';
+      } else {
+        return 'Folder Not Found';
+      }
+    } catch (e) {
+      print("Error fetching folder name: $e");
+      return 'Error Fetching Name';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(folderName),
-        backgroundColor: const Color(0xFFB39DDB),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () => _confirmDeleteFolder(context),
+    return FutureBuilder<String>(
+      future: _getFolderName(folderId), // Fetch folder name
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Loading...'),
+            ),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Error'),
+            ),
+            body: const Center(child: Text('Error fetching folder name')),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('No Folder'),
+            ),
+            body: const Center(child: Text('No folder found')),
+          );
+        }
+
+        // Folder name fetched successfully, display the FolderPage
+        final folderName = snapshot.data!;
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(folderName), // Set folder name as title
+            backgroundColor: const Color(0xFFB39DDB),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () => _confirmDeleteFolder(context),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(FirebaseAuth.instance.currentUser!.uid) // User's UID
-                  .collection('Folders')
-                  .doc(folderId) // Folder ID
-                  .collection('Pictures')// Subcollection of pictures
-                  .orderBy('createdAt', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text("No pictures in this folder."));
-                }
-
-                final pictures = snapshot.data!.docs;
-
-                return GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: pictures.length,
-                    itemBuilder: (context, index) {
-                      final picture = pictures[index].data() as Map<String, dynamic>;
-                      final pictureId = pictures[index].id;
-
-                      return GestureDetector(
-                        onLongPress: () => _confirmDeletePicture(context, pictureId),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // Displaying the image from the URL
-                            picture['imageUrl'] != null
-                                ? Image.network(
-                              picture['imageUrl'],
-                              height: 100, // Constrained size for the image
-                              width: 100,  // You can adjust this based on your layout
-                              fit: BoxFit.cover, // Make sure it fits well inside the box
-                            )
-                                : const Icon(Icons.image, size: 40), // Default icon if no image URL
-                            const SizedBox(height: 8),
-                            // Wrap the description text with an Expanded widget
-                            Expanded(
-                              child: Text(
-                                picture['description'] ?? "No Description",
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis, // Adds an ellipsis if the text overflows
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+          body: Column(
+            children: [
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('Users')
+                      .doc(FirebaseAuth.instance.currentUser!.uid) // User's UID
+                      .collection('Folders')
+                      .doc(folderId) // Folder ID
+                      .collection('Pictures') // Subcollection of pictures
+                      .orderBy('createdAt', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(
+                          child: Text("No pictures in this folder."));
                     }
 
-                );
-              },
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(FirebaseAuth.instance.currentUser!.uid)
-                  .collection('Folders')
-                  .doc(folderId)
-                  .collection('Locations')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text("No locations in this folder."));
-                }
+                    final pictures = snapshot.data!.docs;
 
-                final locations = snapshot.data!.docs;
-
-                return ListView.builder(
-                  itemCount: locations.length,
-                  itemBuilder: (context, index) {
-                    final location = locations[index].data() as Map<String, dynamic>;
-                    final locationId = locations[index].id;
-
-                    return ListTile(
-                      leading: const Icon(Icons.location_on),
-                      title: Text(location['title'] ?? "No Title"),
-                      subtitle: Text(location['address'] ?? "No Address"),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _confirmDeleteLocation(context, locationId),
+                    return GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
                       ),
+                      itemCount: pictures.length,
+                      itemBuilder: (context, index) {
+                        final picture = pictures[index].data() as Map<
+                            String,
+                            dynamic>;
+                        final pictureId = pictures[index].id;
+
+                        return GestureDetector(
+                          onLongPress: () =>
+                              _confirmDeletePicture(context, pictureId),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Displaying the image from the URL
+                              picture['imageUrl'] != null
+                                  ? Image.network(
+                                picture['imageUrl'],
+                                height: 100,
+                                // Constrained size for the image
+                                width: 100,
+                                // You can adjust this based on your layout
+                                fit: BoxFit
+                                    .cover, // Make sure it fits well inside the box
+                              )
+                                  : const Icon(Icons.image, size: 40),
+                              // Default icon if no image URL
+                              const SizedBox(height: 5),
+                              // Wrap the description text with an Expanded widget
+                              Expanded(
+                                child: Text(
+                                  picture['description'] ?? "No Description",
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow
+                                      .ellipsis, // Adds an ellipsis if the text overflows
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+
                     );
                   },
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                _showAddPictureDialog(context);
-              },
-              icon: const Icon(Icons.add),
-              label: const Text("Add Picture"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFB39DDB),
+                ),
               ),
-            ),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('Users')
+                      .doc(FirebaseAuth.instance.currentUser!.uid)
+                      .collection('Folders')
+                      .doc(folderId)
+                      .collection('Locations')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(
+                          child: Text("No locations in this folder."));
+                    }
+
+                    final locations = snapshot.data!.docs;
+
+                    return ListView.builder(
+                      itemCount: locations.length,
+                      itemBuilder: (context, index) {
+                        final location = locations[index].data() as Map<
+                            String,
+                            dynamic>;
+                        final locationId = locations[index].id;
+
+                        return ListTile(
+                          leading: const Icon(Icons.location_on),
+                          title: Text(location['title'] ?? "No Title"),
+                          subtitle: Text(location['address'] ?? "No Address"),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () =>
+                                _confirmDeleteLocation(context, locationId),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    _showAddPictureDialog(context);
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text("Add Picture"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB39DDB),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -164,13 +228,9 @@ class FolderPage extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () async {
-                await FirebaseFirestore.instance
-                    .collection('Users')
-                    .doc(FirebaseAuth.instance.currentUser!.uid)
-                    .collection('Folders')
-                    .doc(folderId)
-                    .delete();
-                Navigator.pop(context); // Navigate back after deleting
+                await _deleteFolderAndContents(folderId);
+                Navigator.pop(context);
+                Navigator.pop(context);// Navigate back after deleting
               },
               child: const Text("Delete"),
             ),
@@ -178,6 +238,35 @@ class FolderPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _deleteFolderAndContents(String folderId) async {
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+    final folderRef = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(userId)
+        .collection('Folders')
+        .doc(folderId);
+
+    try {
+      // Delete all documents in the 'Pictures' collection
+      final picturesSnapshot = await folderRef.collection('Pictures').get();
+      for (var doc in picturesSnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      // Delete all documents in the 'Locations' collection
+      final locationsSnapshot = await folderRef.collection('Locations').get();
+      for (var doc in locationsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      // After deleting subcollections, delete the folder itself
+      await folderRef.delete();
+      print('Folder and all contents deleted successfully!');
+    } catch (e) {
+      print("Error deleting folder and contents: $e");
+    }
   }
 
   void _confirmDeletePicture(BuildContext context, String pictureId) {
@@ -373,6 +462,7 @@ class FolderPage extends StatelessWidget {
       await picturesRef.add({
         'imageUrl': imageUrl,
         'description': description,
+        'folderId': folderId,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
