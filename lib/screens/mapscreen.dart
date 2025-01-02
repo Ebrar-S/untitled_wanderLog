@@ -91,7 +91,7 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               TileLayer(
                 urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                subdomains: ['a', 'b', 'c'],
+                subdomains: const ['a', 'b', 'c'],
               ),
               MarkerLayer(
                 markers: _markers, // Use the list of markers
@@ -152,7 +152,7 @@ class _MapScreenState extends State<MapScreen> {
           FloatingActionButton(
             backgroundColor: Colors.grey[300],
             onPressed: () {
-              _mapController.move(LatLng(41.9028, 12.4964), 12.0);
+              _mapController.move(const LatLng(41.9028, 12.4964), 12.0);
             },
             child: const Icon(Icons.location_searching),
           ),
@@ -174,26 +174,26 @@ class _MapScreenState extends State<MapScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Add Location'),
+          title: const Text('Add Location'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Input for title and address
               TextField(
-                decoration: InputDecoration(labelText: 'Location Title'),
+                decoration: const InputDecoration(labelText: 'Location Title'),
                 onChanged: (value) {
                   title = value;
                 },
               ),
               TextField(
-                decoration: InputDecoration(labelText: 'Location Address'),
+                decoration: const InputDecoration(labelText: 'Location Address'),
                 onChanged: (value) {
                   address = value;
                 },
               ),
               // Folder selection dropdown
               DropdownButton<String>(
-                hint: Text('Select Folder'),
+                hint: const Text('Select Folder'),
                 value: selectedFolderId,
                 onChanged: (String? newFolderId) {
                   setState(() {
@@ -220,7 +220,7 @@ class _MapScreenState extends State<MapScreen> {
                     });
                   });
                 },
-                child: Text('Select Pin Color'),
+                child: const Text('Select Pin Color'),
               ),
             ],
           ),
@@ -229,7 +229,7 @@ class _MapScreenState extends State<MapScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
@@ -250,7 +250,7 @@ class _MapScreenState extends State<MapScreen> {
                     } else {
                       // If no location is found, show an error message
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Address could not be geocoded')),
+                        const SnackBar(content: Text('Address could not be geocoded')),
                       );
                     }
                   } catch (e) {
@@ -263,7 +263,7 @@ class _MapScreenState extends State<MapScreen> {
                   Navigator.of(context).pop();
                 }
               },
-              child: Text('Add Marker'),
+              child: const Text('Add Marker'),
             ),
           ],
         );

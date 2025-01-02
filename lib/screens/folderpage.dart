@@ -1,12 +1,18 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
 
 class FolderPage extends StatelessWidget {
   final String folderName;
   final String folderId;
+  final Function? onPictureAdded;
 
-  const FolderPage({required this.folderName, required this.folderId, super.key});
+  const FolderPage({required this.folderName, required this.folderId, this.onPictureAdded, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +36,8 @@ class FolderPage extends StatelessWidget {
                   .doc(FirebaseAuth.instance.currentUser!.uid) // User's UID
                   .collection('Folders')
                   .doc(folderId) // Folder ID
-                  .collection('Pictures') // Subcollection of pictures
+                  .collection('Pictures')// Subcollection of pictures
+                  .orderBy('createdAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -49,25 +56,39 @@ class FolderPage extends StatelessWidget {
                     mainAxisSpacing: 8,
                   ),
                   itemCount: pictures.length,
-                  itemBuilder: (context, index) {
-                    final picture = pictures[index].data() as Map<String, dynamic>;
-                    final pictureId = pictures[index].id;
+                    itemBuilder: (context, index) {
+                      final picture = pictures[index].data() as Map<String, dynamic>;
+                      final pictureId = pictures[index].id;
 
-                    return GestureDetector(
-                      onLongPress: () => _confirmDeletePicture(context, pictureId),
-                      child: Container(
-                        color: Colors.grey[300],
+                      return GestureDetector(
+                        onLongPress: () => _confirmDeletePicture(context, pictureId),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Icon(Icons.image, size: 40),
+                            // Displaying the image from the URL
+                            picture['imageUrl'] != null
+                                ? Image.network(
+                              picture['imageUrl'],
+                              height: 100, // Constrained size for the image
+                              width: 100,  // You can adjust this based on your layout
+                              fit: BoxFit.cover, // Make sure it fits well inside the box
+                            )
+                                : const Icon(Icons.image, size: 40), // Default icon if no image URL
                             const SizedBox(height: 8),
-                            Text(picture['description'] ?? "No Description"),
+                            // Wrap the description text with an Expanded widget
+                            Expanded(
+                              child: Text(
+                                picture['description'] ?? "No Description",
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis, // Adds an ellipsis if the text overflows
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    }
+
                 );
               },
             ),
@@ -149,7 +170,6 @@ class FolderPage extends StatelessWidget {
                     .collection('Folders')
                     .doc(folderId)
                     .delete();
-                Navigator.pop(context);
                 Navigator.pop(context); // Navigate back after deleting
               },
               child: const Text("Delete"),
@@ -224,75 +244,142 @@ class FolderPage extends StatelessWidget {
     );
   }
 
-  void _showAddPictureDialog(BuildContext context) {
+  void _showAddPictureDialog(BuildContext context) async {
     final TextEditingController descriptionController = TextEditingController();
+    String? uploadedImageUrl;
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          title: const Text("Add Picture"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Simulating adding a picture URL."),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(
-                  labelText: "Picture Description",
-                  border: OutlineInputBorder(),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              title: const Text("Add Picture"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final FilePickerResult? result =
+                      await FilePicker.platform.pickFiles(type: FileType.image);
+                      if (result != null && result.files.single.path != null) {
+                        final String? imageUrl =
+                        await uploadImageToImgBB(File(result.files.single.path!));
+                        if (imageUrl != null) {
+                          setState(() {
+                            uploadedImageUrl = imageUrl;
+                          });
+                          print("Uploaded image URL: $uploadedImageUrl");
+                        } else {
+                          print("Failed to upload image.");
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.upload),
+                    label: const Text("Upload Picture"),
+                  ),
+                  const SizedBox(height: 16),
+                  if (uploadedImageUrl != null)
+                    Text(
+                      "Image Uploaded!",
+                      style: const TextStyle(color: Colors.green),
+                    ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: "Picture Description",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Cancel"),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final description = descriptionController.text.trim();
-                if (description.isNotEmpty) {
-                  await addPictureToFolder(description);
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-              ),
-              child: const Text("Add"),
-            ),
-          ],
+                ElevatedButton(
+                  onPressed: () async {
+                    if (uploadedImageUrl == null) {
+                      print("UploadedImageUrl is null!");
+                      return;
+                    }
+                    if (descriptionController.text.trim().isEmpty) {
+                      print("Description is empty!");
+                      return;
+                    }
+                    await _savePicture(
+                      uploadedImageUrl!,
+                      descriptionController.text.trim(),
+                    );
+                    if (onPictureAdded != null) {
+                      onPictureAdded!();
+                    }
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Add"),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  Future<void> addPictureToFolder(String description) async {
-    try {
-      final String uid = FirebaseAuth.instance.currentUser!.uid; // Get current user's UID
-      final CollectionReference picturesCollection = FirebaseFirestore.instance
-          .collection('Users')
-          .doc(uid) // User's UID
-          .collection('Folders')
-          .doc(folderId) // Folder ID
-          .collection('Pictures');
 
-      await picturesCollection.add({
+  Future<String?> uploadImageToImgBB(File image) async {
+    const String apiKey = '8b852bb8ae100c94125ec2305f07a310'; // Replace with your ImgBB API key
+    final Uri url = Uri.parse("https://api.imgbb.com/1/upload?key=$apiKey");
+
+    try {
+      final http.MultipartRequest request =
+      http.MultipartRequest("POST", url)
+        ..files.add(await http.MultipartFile.fromPath("image", image.path));
+
+      final http.StreamedResponse response = await request.send();
+      final String responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(responseBody);
+        return responseData['data']['url'];
+      } else {
+        print("Failed to upload to ImgBB: ${response.statusCode}");
+        print(responseBody);
+        return null;
+      }
+    } catch (e) {
+      print("Error uploading to ImgBB: $e");
+      return null;
+    }
+  }
+
+  Future<void> _savePicture(String imageUrl, String description) async {
+    try {
+      final String uid = FirebaseAuth.instance.currentUser!.uid;
+      final CollectionReference picturesRef = FirebaseFirestore.instance
+          .collection("Users")
+          .doc(uid)
+          .collection("Folders")
+          .doc(folderId)
+          .collection("Pictures");
+
+      await picturesRef.add({
+        'imageUrl': imageUrl,
         'description': description,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      print("Picture added successfully!");
+      print("Picture saved successfully!");
     } catch (e) {
-      print("Error adding picture: $e");
+      print("Error saving picture: $e");
     }
   }
+
 }

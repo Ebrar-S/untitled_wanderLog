@@ -53,8 +53,11 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
                 leading: const Icon(Icons.settings),
                 title: const Text("Settings"),
                 onTap: () {
-                  Navigator.pop(context);
-                  print('Go to Settings');
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                        (route) => false, // Remove all previous routes
+                  );
                 },
               ),
               ListTile(

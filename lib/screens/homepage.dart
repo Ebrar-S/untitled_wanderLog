@@ -60,7 +60,9 @@ class HomePage extends StatelessWidget {
                                   MaterialPageRoute(
                                     builder: (context) => FolderPage(
                                       folderName: folderName,
-                                      folderId: folderId,  // Pass the folderId here
+                                      folderId: folderId,
+                                      // Pass the folderId here
+
                                     ),
                                   ),
                                 );
@@ -73,7 +75,6 @@ class HomePage extends StatelessWidget {
                     );
                   },
                 )
-
               ],
             ),
           ),
@@ -91,17 +92,97 @@ class HomePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Expanded(
-                    child: GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3, // Adjust number of columns
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                      ),
-                      itemCount: 20, // Replace with the number of photos
-                      itemBuilder: (context, index) {
-                        return Container(
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.image, size: 40),
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('Users')
+                          .doc(FirebaseAuth.instance.currentUser!.uid) // Current user ID
+                          .collection('Folders') // All folders
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const Center(child: Text("No folders found."));
+                        }
+
+                        final folders = snapshot.data!.docs;
+
+                        // Create a list to collect all pictures from all folders
+                        List<Future<QuerySnapshot<Map<String, dynamic>>>> allPictures = [];
+
+                        // Iterate through each folder and fetch its pictures
+                        for (var folder in folders) {
+                          var folderId = folder.id;
+
+                          // Fetch pictures for the current folder
+                          allPictures.add(
+                            FirebaseFirestore.instance
+                                .collection('Users')
+                                .doc(FirebaseAuth.instance.currentUser!.uid)
+                                .collection('Folders')
+                                .doc(folderId)
+                                .collection('Pictures')
+                                .orderBy('createdAt', descending: true)
+                                .get(),
+                          );
+                        }
+
+                        return FutureBuilder<List<QuerySnapshot>>(
+                          future: Future.wait(allPictures),
+                          builder: (context, pictureSnapshot) {
+                            if (pictureSnapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            if (!pictureSnapshot.hasData || pictureSnapshot.data!.isEmpty) {
+                              return const Center(child: Text("No pictures available."));
+                            }
+
+                            // Flatten the list of pictures from all folders
+                            final pictures = pictureSnapshot.data!
+                                .expand((snapshot) => snapshot.docs)
+                                .toList();
+
+                            return GridView.builder(
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3, // Adjust number of columns
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                              ),
+                              itemCount: pictures.length,
+                              itemBuilder: (context, index) {
+                                final picture = pictures[index].data() as Map<String, dynamic>;
+                                final pictureId = pictures[index].id;
+
+                                return GestureDetector(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      // Displaying the image from the URL
+                                      picture['imageUrl'] != null
+                                          ? Image.network(
+                                        picture['imageUrl'],
+                                        height: 100, // Constrained size for the image
+                                        width: 100,  // You can adjust this based on your layout
+                                        fit: BoxFit.cover, // Make sure it fits well inside the box
+                                      )
+                                          : const Icon(Icons.image, size: 40), // Default icon if no image URL
+                                      const SizedBox(height: 8),
+                                      // Wrap the description text with an Expanded widget
+                                      Expanded(
+                                        child: Text(
+                                          picture['description'] ?? "No Description",
+                                          textAlign: TextAlign.center,
+                                          overflow: TextOverflow.ellipsis, // Adds an ellipsis if the text overflows
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         );
                       },
                     ),
@@ -109,7 +190,9 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
-          ),
+          )
+
+
         ],
       ),
       floatingActionButton: FloatingActionButton(
