@@ -175,55 +175,49 @@ class _MapScreenState extends State<MapScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Add Location'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Input for title and address
-              TextField(
-                decoration: const InputDecoration(labelText: 'Location Title'),
-                onChanged: (value) {
-                  title = value;
-                },
-              ),
-              TextField(
-                decoration: const InputDecoration(labelText: 'Location Address'),
-                onChanged: (value) {
-                  address = value;
-                },
-              ),
-              // Folder selection dropdown
-              DropdownButton<String>(
-                hint: const Text('Select Folder'),
-                value: selectedFolderId,
-                onChanged: (String? newFolderId) {
-                  setState(() {
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  decoration: const InputDecoration(labelText: 'Location Title'),
+                  onChanged: (value) {
+                    title = value;
+                  },
+                ),
+                TextField(
+                  decoration: const InputDecoration(labelText: 'Location Address'),
+                  onChanged: (value) {
+                    address = value;
+                  },
+                ),
+                DropdownButton<String>(
+                  hint: const Text('Select Folder'),
+                  value: selectedFolderId,
+                  onChanged: (String? newFolderId) {
                     selectedFolderId = newFolderId;
-                  });
-                },
-                items: folders.map((folder) {
-                  final folderData = folder.data() as Map<String, dynamic>;
-                  final folderName = folderData['name'] ?? "Unnamed Folder";
-                  final folderId = folder.id;
-                  return DropdownMenuItem<String>(
-                    value: folderId,
-                    child: Text(folderName),
-                  );
-                }).toList(),
-              ),
-              // Color Picker Button
-              ElevatedButton(
-                onPressed: () {
-                  // Show color picker dialog
-                  _selectPinColor(context, (newColor) {
-                    setState(() {
-                      pinColor = newColor; // Update pin color
+                  },
+                  items: folders.map((folder) {
+                    final folderData = folder.data() as Map<String, dynamic>;
+                    final folderName = folderData['name'] ?? "Unnamed Folder";
+                    return DropdownMenuItem<String>(
+                      value: folder.id,
+                      child: Text(folderName),
+                    );
+                  }).toList(),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    _selectPinColor(context, (newColor) {
+                      pinColor = newColor;
                     });
-                  });
-                },
-                child: const Text('Select Pin Color'),
-              ),
-            ],
+                  },
+                  child: const Text('Select Pin Color'),
+                ),
+              ],
+            ),
           ),
+
           actions: [
             TextButton(
               onPressed: () {
@@ -327,10 +321,13 @@ class _MapScreenState extends State<MapScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text("Select Pin Color"),
-          content: SingleChildScrollView(
-            child: BlockPicker(
-              pickerColor: Colors.red, // Initial color
-              onColorChanged: onColorSelected, // Callback when a new color is selected
+          content: SizedBox(
+            height: 300, // Adjust height for better scrolling and visibility
+            child: SingleChildScrollView(
+              child: BlockPicker(
+                pickerColor: Colors.red, // Initial color
+                onColorChanged: onColorSelected, // Callback when a new color is selected
+              ),
             ),
           ),
           actions: [
