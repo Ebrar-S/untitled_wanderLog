@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'editprofilescreen.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -115,7 +117,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     leading: const Icon(Icons.edit),
                     title: const Text("Edit Profile"),
                     onTap: () {
-                      // Navigate to Edit Profile screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+                      );
+
                     },
                   ),
                   ListTile(

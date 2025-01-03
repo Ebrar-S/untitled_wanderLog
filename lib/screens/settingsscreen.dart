@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'editprofilescreen.dart';
 import 'login.dart'; // Import LoginPage for logout functionality
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -137,84 +138,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
-
-class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({super.key});
-
-  @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
-}
-
-class _EditProfileScreenState extends State<EditProfileScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  void _loadUserData() {
-    final user = _auth.currentUser;
-    if (user != null) {
-      _nameController.text = user.displayName ?? '';
-      _emailController.text = user.email ?? '';
-    }
-  }
-
-  Future<void> _updateProfile() async {
-    try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        await user.updateDisplayName(_nameController.text);
-        await user.updateEmail(_emailController.text);
-        await user.reload();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Profile updated successfully")),
-        );
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Edit Profile"),
-      ),
-      body: SingleChildScrollView( // Wrap the entire content in a scrollable view
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: "Name"),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _updateProfile,
-              child: const Text("Save Changes"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
 
 class SettingsSection extends StatelessWidget {
   final String title;
