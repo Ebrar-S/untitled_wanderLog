@@ -2,7 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'homepage.dart'; // Import HomePage
 import 'mapscreen.dart'; // Import MapScreen (placeholder)
-import 'settingsscreen.dart'; // Import SettingsScreen (placeholder)
+import 'settingsscreen.dart';
+import 'profilescreen.dart';// Import SettingsScreen (placeholder)
 import 'login.dart'; // Import LoginPage for logout functionality
 import 'package:google_fonts/google_fonts.dart';
 
@@ -42,24 +43,26 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.account_circle),
+                leading: const Icon(Icons.person),
                 title: const Text("Your Profile"),
                 onTap: () {
-                  Navigator.pop(context);
-                  print('Go to Profile');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  );
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.settings),
                 title: const Text("Settings"),
                 onTap: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                        (route) => false, // Remove all previous routes
-                  );
+                  Navigator.pop(context); // Close the modal bottom sheet
+                  setState(() {
+                    _selectedIndex = 2; // Index of the SettingsScreen in the bottom navigation bar
+                  });
                 },
               ),
+
               ListTile(
                 leading: const Icon(Icons.logout),
                 title: const Text("Log Out"),
