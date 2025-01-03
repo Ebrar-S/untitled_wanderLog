@@ -351,83 +351,85 @@ class FolderPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              title: const Text("Add Picture"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final FilePickerResult? result =
-                      await FilePicker.platform.pickFiles(type: FileType.image);
-                      if (result != null && result.files.single.path != null) {
-                        final String? imageUrl =
-                        await uploadImageToImgBB(File(result.files.single.path!));
-                        if (imageUrl != null) {
-                          setState(() {
-                            uploadedImageUrl = imageUrl;
-                          });
-                          print("Uploaded image URL: $uploadedImageUrl");
-                        } else {
-                          print("Failed to upload image.");
+        return SingleChildScrollView(
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                title: const Text("Add Picture"),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final FilePickerResult? result =
+                        await FilePicker.platform.pickFiles(type: FileType.image);
+                        if (result != null && result.files.single.path != null) {
+                          final String? imageUrl =
+                          await uploadImageToImgBB(File(result.files.single.path!));
+                          if (imageUrl != null) {
+                            setState(() {
+                              uploadedImageUrl = imageUrl;
+                            });
+                            print("Uploaded image URL: $uploadedImageUrl");
+                          } else {
+                            print("Failed to upload image.");
+                          }
                         }
-                      }
+                      },
+                      icon: const Icon(Icons.upload),
+                      label: const Text("Upload Picture"),
+                    ),
+                    const SizedBox(height: 16),
+                    if (uploadedImageUrl != null)
+                      Text(
+                        "Image Uploaded!",
+                        style: const TextStyle(color: Colors.green),
+                      ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: "Picture Description",
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
                     },
-                    icon: const Icon(Icons.upload),
-                    label: const Text("Upload Picture"),
+                    child: const Text("Cancel"),
                   ),
-                  const SizedBox(height: 16),
-                  if (uploadedImageUrl != null)
-                    Text(
-                      "Image Uploaded!",
-                      style: const TextStyle(color: Colors.green),
-                    ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: "Picture Description",
-                      border: OutlineInputBorder(),
-                    ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (uploadedImageUrl == null) {
+                        print("UploadedImageUrl is null!");
+                        return;
+                      }
+                      if (descriptionController.text.trim().isEmpty) {
+                        print("Description is empty!");
+                        return;
+                      }
+                      await _savePicture(
+                        uploadedImageUrl!,
+                        descriptionController.text.trim(),
+                      );
+                      if (onPictureAdded != null) {
+                        onPictureAdded!();
+                      }
+                      Navigator.pop(context);
+                    },
+                    child: const Text("Add"),
                   ),
                 ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Cancel"),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (uploadedImageUrl == null) {
-                      print("UploadedImageUrl is null!");
-                      return;
-                    }
-                    if (descriptionController.text.trim().isEmpty) {
-                      print("Description is empty!");
-                      return;
-                    }
-                    await _savePicture(
-                      uploadedImageUrl!,
-                      descriptionController.text.trim(),
-                    );
-                    if (onPictureAdded != null) {
-                      onPictureAdded!();
-                    }
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Add"),
-                ),
-              ],
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );

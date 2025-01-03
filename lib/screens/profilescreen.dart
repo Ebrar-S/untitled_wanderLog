@@ -198,77 +198,79 @@ void _showChangePasswordDialog(BuildContext context) {
   showDialog(
     context: context,
     builder: (context) {
-      return AlertDialog(
-        title: const Text("Change Password"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Enter your current password and new password:"),
-            const SizedBox(height: 10),
-            TextField(
-              controller: oldPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: "Current Password",
-                border: OutlineInputBorder(),
+      return SingleChildScrollView(
+        child: AlertDialog(
+          title: const Text("Change Password"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Enter your current password and new password:"),
+              const SizedBox(height: 10),
+              TextField(
+                controller: oldPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: "Current Password",
+                  border: OutlineInputBorder(),
+                ),
               ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: newPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: "New Password",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("Cancel"),
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: newPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: "New Password",
-                border: OutlineInputBorder(),
-              ),
+            ElevatedButton(
+              onPressed: () async {
+                final oldPassword = oldPasswordController.text.trim();
+                final newPassword = newPasswordController.text.trim();
+        
+                if (oldPassword.isEmpty || newPassword.isEmpty || newPassword.length < 6) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please fill in all fields correctly.")),
+                  );
+                  return;
+                }
+        
+                try {
+                  final user = _auth.currentUser;
+                  if (user == null) throw Exception("User not logged in.");
+                  final email = user.email;
+                  if (email == null) throw Exception("User email not found.");
+        
+                  final credential = EmailAuthProvider.credential(
+                    email: email,
+                    password: oldPassword,
+                  );
+                  await user.reauthenticateWithCredential(credential);
+                  await user.updatePassword(newPassword);
+        
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Password updated successfully.")),
+                  );
+                  Navigator.pop(context);
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error: $e")),
+                  );
+                }
+              },
+              child: const Text("Change"),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final oldPassword = oldPasswordController.text.trim();
-              final newPassword = newPasswordController.text.trim();
-
-              if (oldPassword.isEmpty || newPassword.isEmpty || newPassword.length < 6) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Please fill in all fields correctly.")),
-                );
-                return;
-              }
-
-              try {
-                final user = _auth.currentUser;
-                if (user == null) throw Exception("User not logged in.");
-                final email = user.email;
-                if (email == null) throw Exception("User email not found.");
-
-                final credential = EmailAuthProvider.credential(
-                  email: email,
-                  password: oldPassword,
-                );
-                await user.reauthenticateWithCredential(credential);
-                await user.updatePassword(newPassword);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Password updated successfully.")),
-                );
-                Navigator.pop(context);
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Error: $e")),
-                );
-              }
-            },
-            child: const Text("Change"),
-          ),
-        ],
       );
     },
   );
