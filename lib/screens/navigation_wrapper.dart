@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'homepage.dart'; // Import HomePage
@@ -30,6 +31,21 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<String?> _getProfileImageUrlFromFirestore() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return null;
+
+      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      return userDoc.data()?['profileImageUrl'] as String?;
+    } catch (e) {
+      print("Error fetching profile image: $e");
+      return null;
+    }
   }
 
   // Show profile settings modal
@@ -88,6 +104,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFFB39DDB),
+        automaticallyImplyLeading: false,
         title: GestureDetector(
           onTap: () {
             print('WanderLog tapped!');
@@ -108,16 +125,37 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
               const Spacer(), // Pushes the GestureDetector to the right
               GestureDetector(
                 onTap: () {
-                  _showProfileSettings(context);
+                  _showProfileSettings(context); // Function to show profile settings
                 },
-                child: CircleAvatar(
-                  radius: 18,
-                  backgroundImage: const NetworkImage(
-                    "https://via.placeholder.com/150", // Replace with user's profile picture URL
-                  ),
-                  backgroundColor: Colors.grey[300],
+                child: FutureBuilder<String?>(
+                  future: _getProfileImageUrlFromFirestore(), // Function to fetch URL from Firestore
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      // While waiting for data, show a loading indicator
+                      return CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.grey[300],
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      );
+                    } else if (snapshot.hasError || snapshot.data == null) {
+                      // If there's an error or no data, show a placeholder
+                      return CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.grey[300],
+                        child: const Icon(Icons.person, size: 18, color: Colors.grey),
+                      );
+                    } else {
+                      // Successfully loaded data, show the profile image
+                      return CircleAvatar(
+                        radius: 18,
+                        backgroundImage: NetworkImage(snapshot.data!),
+                        backgroundColor: Colors.grey[300],
+                      );
+                    }
+                  },
                 ),
               ),
+
             ],
           ),
         ),

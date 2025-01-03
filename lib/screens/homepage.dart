@@ -201,7 +201,7 @@ class HomePage extends StatelessWidget {
                                         fit: BoxFit.cover, // Make sure it fits well inside the box
                                       )
                                           : const Icon(Icons.image, size: 40), // Default icon if no image URL
-                                      const SizedBox(height: 5),
+                                      const SizedBox(height: 3),
                                       // Wrap the description text with an Expanded widget
                                       Expanded(
                                         child: Text(

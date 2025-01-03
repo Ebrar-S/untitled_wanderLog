@@ -7,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 
+import 'navigation_wrapper.dart';
+
 class FolderPage extends StatelessWidget {
   final String folderId;
   final Function? onPictureAdded;
@@ -69,6 +71,15 @@ class FolderPage extends StatelessWidget {
           appBar: AppBar(
             title: Text(folderName), // Set folder name as title
             backgroundColor: const Color(0xFFB39DDB),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NavigationWrapper()),
+                ); // Go back to the previous screen
+              },
+            ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.delete),
