@@ -173,97 +173,117 @@ class _MapScreenState extends State<MapScreen> {
     await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Add Location'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  decoration: const InputDecoration(labelText: 'Location Title'),
-                  onChanged: (value) {
-                    title = value;
-                  },
+        return SingleChildScrollView(
+            child: StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+                return AlertDialog(
+                  title: const Text('Add Location'),
+                  content: SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.6, // Limit dialog height
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            decoration: const InputDecoration(labelText: 'Location Title'),
+                            onChanged: (value) {
+                              setState(() {
+                                title = value;
+                              });
+                            },
+                          ),
+                          TextField(
+                            decoration: const InputDecoration(labelText: 'Location Address'),
+                            onChanged: (value) {
+                              setState(() {
+                                address = value;
+                              });
+                            },
+                          ),
+                          DropdownButton<String>(
+                            hint: const Text('Select Folder'),
+                            value: selectedFolderId,
+                            onChanged: (String? newFolderId) {
+                              setState(() {
+                                selectedFolderId = newFolderId;
+                              });
+                            },
+                            items: folders.map((folder) {
+                              final folderData = folder.data() as Map<String, dynamic>;
+                              final folderName = folderData['name'] ?? "Unnamed Folder";
+                              return DropdownMenuItem<String>(
+                                value: folder.id,
+                                child: Text(folderName),
+                              );
+                            }).toList(),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              _selectPinColor(context, (newColor) {
+                                setState(() {
+                                  pinColor = newColor;
+                                });
+                              });
+                            },
+                            child: const Text('Select Pin Color'),
+                          ),
+                        ],
+                      ),
+                    ),
                 ),
-                TextField(
-                  decoration: const InputDecoration(labelText: 'Location Address'),
-                  onChanged: (value) {
-                    address = value;
-                  },
-                ),
-                DropdownButton<String>(
-                  hint: const Text('Select Folder'),
-                  value: selectedFolderId,
-                  onChanged: (String? newFolderId) {
-                    selectedFolderId = newFolderId;
-                  },
-                  items: folders.map((folder) {
-                    final folderData = folder.data() as Map<String, dynamic>;
-                    final folderName = folderData['name'] ?? "Unnamed Folder";
-                    return DropdownMenuItem<String>(
-                      value: folder.id,
-                      child: Text(folderName),
-                    );
-                  }).toList(),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    _selectPinColor(context, (newColor) {
-                      pinColor = newColor;
-                    });
-                  },
-                  child: const Text('Select Pin Color'),
-                ),
-              ],
-            ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      if (title != null && address != null && pinColor != null && selectedFolderId != null) {
+                        // Geocode the address to get latitude and longitude
+                        try {
+                          List<Location> locations = await locationFromAddress(address!);
+
+                          // Ensure that at least one location was found
+                          if (locations.isNotEmpty) {
+                            // Use the first location result
+                            Location location = locations.first;
+                            double lat = location.latitude;
+                            double lng = location.longitude;
+
+                            // Add the marker to the map and save to the folder
+                            _addMarker(title!, address!, pinColor!, lat, lng, selectedFolderId!);
+                          } else {
+                            // If no location is found, show an error message
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Address could not be geocoded')),
+                            );
+                          }
+                        } catch (e) {
+                          // Handle error
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error geocoding address: $e')),
+                          );
+                        }
+
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    child: const Text('Add Marker'),
+                  ),
+                ],
+              );
+            },
           ),
-
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (title != null && address != null && pinColor != null && selectedFolderId != null) {
-                  // Geocode the address to get latitude and longitude
-                  try {
-                    List<Location> locations = await locationFromAddress(address!);
-
-                    // Ensure that at least one location was found
-                    if (locations.isNotEmpty) {
-                      // Use the first location result
-                      Location location = locations.first;
-                      double lat = location.latitude;
-                      double lng = location.longitude;
-
-                      // Add the marker to the map and save to the folder
-                      _addMarker(title!, address!, pinColor!, lat, lng, selectedFolderId!);
-                    } else {
-                      // If no location is found, show an error message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Address could not be geocoded')),
-                      );
-                    }
-                  } catch (e) {
-                    // Handle error
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error geocoding address: $e')),
-                    );
-                  }
-
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('Add Marker'),
-            ),
-          ],
         );
       },
     );
   }
+
+
 
   Future<List<QueryDocumentSnapshot>> _getFolders() async {
     final snapshot = await FirebaseFirestore.instance
@@ -319,26 +339,28 @@ class _MapScreenState extends State<MapScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text("Select Pin Color"),
-          content: SizedBox(
-            height: 300, // Adjust height for better scrolling and visibility
-            child: SingleChildScrollView(
-              child: BlockPicker(
-                pickerColor: Colors.red, // Initial color
-                onColorChanged: onColorSelected, // Callback when a new color is selected
+        return SingleChildScrollView(
+            child: AlertDialog(
+            title: const Text("Select Pin Color"),
+            content: SizedBox(
+              height: 300, // Adjust height for better scrolling and visibility
+              child: SingleChildScrollView(
+                child: BlockPicker(
+                  pickerColor: Colors.red, // Initial color
+                  onColorChanged: onColorSelected, // Callback when a new color is selected
+                ),
               ),
             ),
+            actions: [
+              // OK Button to close the dialog after selecting a color
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: const Text('OK'),
+              ),
+            ],
           ),
-          actions: [
-            // OK Button to close the dialog after selecting a color
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: const Text('OK'),
-            ),
-          ],
         );
       },
     );
